@@ -1,0 +1,163 @@
+/* ==========================================================
+   Think Tank Software Solutions - theme for the HR Dashboard
+   Colours sampled from the Think Tank website screenshot:
+     teal #009ABF | slate #54595F | heading #4D4D4F
+     muted #7A7A7A | page #F5F5F5 | cards #FFFFFF
+   ========================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --tt-teal: #009ABF;
+  --tt-teal-dark: #007C9A;
+  --tt-teal-soft: #E5F5F9;
+  --tt-slate: #54595F;
+  --tt-heading: #4D4D4F;
+  --tt-muted: #7A7A7A;
+  --tt-bg: #F5F5F5;
+  --tt-card: #FFFFFF;
+  --tt-border: #E3E3E3;
+  --tt-radius: 16px;
+}
+
+/* ---------- Page ---------- */
+.stApp {
+  background: var(--tt-bg);
+  color: var(--tt-heading);
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.stApp h1, .stApp h2, .stApp h3, .stApp h4,
+.stApp p, .stApp label, .stApp button, .stApp input, .stApp textarea {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+/* keep Streamlit's own icons working */
+[data-testid="stIconMaterial"] { font-family: 'Material Symbols Rounded' !important; }
+
+[data-testid="stHeader"] { background: transparent; }
+footer, #MainMenu, [data-testid="stDeployButton"] { visibility: hidden; }
+
+.block-container { padding-top: 2.5rem; max-width: 1200px; }
+
+/* ---------- Headings & text ---------- */
+h1 {
+  color: var(--tt-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+h2, h3 { color: var(--tt-heading); font-weight: 600; letter-spacing: -0.01em; }
+p, li, label { color: var(--tt-heading); }
+[data-testid="stCaptionContainer"], small { color: var(--tt-muted); }
+a { color: var(--tt-teal); }
+
+/* Optional wordmark: think<span>tank</span> (see instructions) */
+.tt-brand { font-size: 1.9rem; font-weight: 700; color: var(--tt-slate); letter-spacing: -0.03em; line-height: 1; }
+.tt-brand span { color: var(--tt-teal); }
+.tt-brand small { display: block; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.04em; color: var(--tt-muted); margin-top: 4px; }
+
+/* ---------- Buttons ---------- */
+.stButton > button,
+[data-testid="stFormSubmitButton"] > button {
+  border-radius: 8px;
+  padding: 0.6rem 1.3rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--tt-bg);
+  color: var(--tt-teal);
+  border: 1px solid var(--tt-border);
+  transition: all .15s ease;
+}
+.stButton > button p, [data-testid="stFormSubmitButton"] > button p { margin: 0; color: inherit; }
+.stButton > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover {
+  border-color: var(--tt-teal);
+  color: var(--tt-teal-dark);
+  background: var(--tt-teal-soft);
+}
+/* primary = the teal "REQUEST DEMO" look */
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="stBaseButton-primary"] {
+  background: var(--tt-teal);
+  color: #FFFFFF;
+  border: 1px solid var(--tt-teal);
+}
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
+  background: var(--tt-teal-dark);
+  border-color: var(--tt-teal-dark);
+  color: #FFFFFF;
+}
+
+/* ---------- Metric cards ---------- */
+[data-testid="stMetric"] {
+  background: var(--tt-card);
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius);
+  padding: 1.2rem 1.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+[data-testid="stMetricLabel"] p { color: var(--tt-muted); font-weight: 500; font-size: 0.9rem; }
+[data-testid="stMetricValue"] { color: var(--tt-teal); font-weight: 700; }
+
+/* ---------- Employee cards ----------
+   Needs key="card_..." on st.container (see instructions). */
+[class*="st-key-card"] {
+  background: var(--tt-card);
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius);
+  padding: 1.4rem 1.6rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+[class*="st-key-card"] h3 { margin-bottom: 0.4rem; }
+
+/* ---------- Tabs ---------- */
+[data-testid="stTabs"] button[role="tab"] { color: var(--tt-muted); font-weight: 600; }
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"] { color: var(--tt-teal); }
+[data-testid="stTabs"] [data-baseweb="tab-highlight"] { background-color: var(--tt-teal); height: 3px; }
+[data-testid="stTabs"] [data-baseweb="tab-border"] { background-color: var(--tt-border); }
+
+/* ---------- Inputs & forms ---------- */
+[data-baseweb="input"], [data-baseweb="base-input"], [data-baseweb="textarea"] {
+  border-radius: 8px !important;
+  background: #FFFFFF !important;
+}
+[data-baseweb="input"] { border: 1px solid var(--tt-border) !important; }
+[data-baseweb="input"]:focus-within { border-color: var(--tt-teal) !important; box-shadow: 0 0 0 1px var(--tt-teal); }
+
+[data-testid="stForm"] {
+  background: var(--tt-card);
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius);
+  padding: 1.8rem;
+  max-width: 460px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* ---------- Tables ---------- */
+[data-testid="stDataFrame"] {
+  border: 1px solid var(--tt-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #FFFFFF;
+}
+
+/* ---------- Alerts & toasts ---------- */
+[data-testid="stAlert"] { border-radius: 12px; }
+
+/* ---------- Sidebar (the dark "Partnership first" card look) ---------- */
+[data-testid="stSidebar"] { background: var(--tt-slate); }
+[data-testid="stSidebar"] *,
+[data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #F2F5F7; }
+[data-testid="stSidebar"] h3 { color: #FFFFFF; }
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] * { color: #D5DADF; }
+[data-testid="stSidebar"] .stButton > button {
+  background: transparent;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+  background: var(--tt-teal);
+  border-color: var(--tt-teal);
+  color: #FFFFFF;
+}
