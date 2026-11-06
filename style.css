@@ -157,6 +157,26 @@ a { color: var(--tt-teal); }
   border: 1px solid rgba(255, 255, 255, 0.55);
 }
 [data-testid="stSidebar"] .stButton > button:hover {
+   /* ---------- Force light text inputs ---------- */
+[data-testid="stTextInput"] [data-baseweb="input"],
+[data-testid="stTextInput"] [data-baseweb="base-input"],
+[data-testid="stTextInput"] [data-baseweb="input"] > div {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+}
+[data-testid="stTextInput"] input {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  color: #4D4D4F !important;
+  -webkit-text-fill-color: #4D4D4F !important;
+  caret-color: #009ABF;
+}
+[data-testid="stTextInput"] input::placeholder { color: #7A7A7A !important; }
+[data-testid="stTextInput"] button {
+  background: transparent !important;
+  color: #7A7A7A !important;
+}
+[data-testid="stTextInput"] svg { fill: #7A7A7A !important; }
   background: var(--tt-teal);
   border-color: var(--tt-teal);
   color: #FFFFFF;
