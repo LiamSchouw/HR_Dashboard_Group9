@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import os
+from datetime import date
 from pathlib import Path
 
 import requests
@@ -123,6 +124,43 @@ def confirm_contract(id_no) -> bool:
     return len(r.json()) > 0  # empty list = Supabase refused silently (RLS policy)
 
 
+def add_employee(record: dict):
+    """Insert one new employee row. Returns (ok, message)."""
+    r = requests.post(
+        api_url(),
+        headers={**api_headers(), "Prefer": "return=representation"},
+        json=record,
+        timeout=15,
+    )
+    if r.status_code in (200, 201):
+        return True, ""
+    if r.status_code == 409:
+        return False, "An employee with that ID already exists."
+    if r.status_code in (401, 403):
+        return False, ("The database refused the insert. The employees table "
+                       "needs an insert policy (RLS) for this key.")
+    return False, f"Could not add the employee (error {r.status_code}): {r.text[:200]}"
+
+
+def update_employee(id_no, changes: dict):
+    """Update details for one employee (matched by ID). Returns (ok, message)."""
+    r = requests.patch(
+        api_url(),
+        headers={**api_headers(), "Prefer": "return=representation"},
+        params={ID_COL: f"eq.{id_no}"},
+        json=changes,
+        timeout=15,
+    )
+    if r.status_code in (401, 403):
+        return False, "The database refused the update. Check the update policy (RLS)."
+    if r.status_code >= 400:
+        return False, f"Could not save the changes (error {r.status_code}): {r.text[:200]}"
+    if len(r.json()) == 0:
+        return False, ("No rows were changed. The ID may not exist, or the table's "
+                       "update policy (RLS) blocked the change.")
+    return True, ""
+
+
 def login_gate() -> bool:
     if st.session_state.get("user"):
         return True
@@ -212,7 +250,9 @@ def main():
     m2.metric("Signed - awaiting confirmation", len(waiting))
     m3.metric("Confirmed", len(confirmed))
 
-    tab_wait, tab_all = st.tabs(["Awaiting confirmation", "All employees"])
+    tab_wait, tab_all, tab_add, tab_edit = st.tabs(
+        ["Awaiting confirmation", "All employees", "Add employee", "Edit employee"]
+    )
 
     with tab_wait:
         if not waiting:
@@ -256,6 +296,135 @@ def main():
                     "Progress": r.get("progress"),
                 })
         st.dataframe(view, use_container_width=True, hide_index=True)
+
+
+    with tab_add:
+        st.subheader("Add a new employee")
+        st.caption("Type the full ID number (not the masked version shown in the tables).")
+        with st.form("add_employee"):
+            c1, c2 = st.columns(2)
+            new_id = c1.text_input("ID number")
+            first = c2.text_input("First name")
+            last = c1.text_input("Last name")
+            email = c2.text_input("Email address")
+            dept = c1.text_input("Department")
+            start = c2.date_input("Start date", value=date.today())
+            progress = c1.selectbox(
+                "Onboarding progress",
+                [STATUS_NOT_STARTED, STATUS_SIGNED, STATUS_CONFIRMED, STATUS_COMPLETE],
+            )
+            submitted = st.form_submit_button("Add employee", type="primary")
+
+        if submitted:
+            new_id = new_id.strip()
+            existing = {str(r.get(ID_COL) or "").strip() for r in rows}
+            if not all([new_id, first.strip(), last.strip(), email.strip(), dept.strip()]):
+                st.error("Please fill in every field.")
+            elif not new_id.isdigit():
+                st.error("The ID number must contain digits only.")
+            elif "@" not in email or "." not in email.split("@")[-1]:
+                st.error("Please enter a valid email address.")
+            elif new_id in existing:
+                st.error("An employee with that ID already exists.")
+            else:
+                try:
+                    ok, msg = add_employee({
+                        ID_COL: new_id,
+                        "first_name": first.strip(),
+                        "last_name": last.strip(),
+                        "email_address": email.strip(),
+                        "department": dept.strip(),
+                        "start_date": start.isoformat(),
+                        "progress": progress,
+                    })
+                except Exception as e:
+                    ok, msg = False, f"Could not reach the database: {e}"
+                if ok:
+                    load_employees.clear()
+                    st.toast(f"Added {first.strip()} {last.strip()}.")
+                    st.rerun()
+                else:
+                    st.error(msg)
+
+
+    with tab_edit:
+        st.subheader("Edit employee details")
+        if not rows:
+            st.info("There are no employees to edit yet.")
+        else:
+            def label(r):
+                return (f"{r.get('first_name', '')} {r.get('last_name', '')} "
+                        f"({mask_id(r.get(ID_COL))})")
+
+            idx = st.selectbox("Choose an employee", range(len(rows)),
+                               format_func=lambda i: label(rows[i]))
+            sel = rows[idx]
+            sel_id = sel.get(ID_COL)
+
+            statuses = [STATUS_NOT_STARTED, STATUS_SIGNED, STATUS_CONFIRMED, STATUS_COMPLETE]
+            current = str(sel.get("progress") or STATUS_NOT_STARTED)
+            if current not in statuses:
+                statuses.append(current)
+            try:
+                start_default = date.fromisoformat(str(sel.get("start_date"))[:10])
+            except ValueError:
+                start_default = date.today()
+
+            with st.form(f"edit_form_{sel_id}"):
+                e1, e2 = st.columns(2)
+                e1.text_input("ID number (cannot be changed)", value=mask_id(sel_id),
+                              disabled=True, key=f"e_id_{sel_id}")
+                e_first = e2.text_input("First name", value=sel.get("first_name") or "",
+                                        key=f"e_first_{sel_id}")
+                e_last = e1.text_input("Last name", value=sel.get("last_name") or "",
+                                       key=f"e_last_{sel_id}")
+                e_email = e2.text_input("Email address", value=sel.get("email_address") or "",
+                                        key=f"e_email_{sel_id}")
+                e_dept = e1.text_input("Department", value=sel.get("department") or "",
+                                       key=f"e_dept_{sel_id}")
+                e_start = e2.date_input("Start date", value=start_default,
+                                        key=f"e_start_{sel_id}")
+                e_prog = e1.selectbox("Onboarding progress", statuses,
+                                      index=statuses.index(current), key=f"e_prog_{sel_id}")
+                save = st.form_submit_button("Save changes", type="primary")
+
+            if save:
+                new_vals = {
+                    "first_name": e_first.strip(),
+                    "last_name": e_last.strip(),
+                    "email_address": e_email.strip(),
+                    "department": e_dept.strip(),
+                    "start_date": e_start.isoformat(),
+                    "progress": e_prog,
+                }
+                old_vals = {
+                    "first_name": str(sel.get("first_name") or ""),
+                    "last_name": str(sel.get("last_name") or ""),
+                    "email_address": str(sel.get("email_address") or ""),
+                    "department": str(sel.get("department") or ""),
+                    "start_date": str(sel.get("start_date") or "")[:10],
+                    "progress": current,
+                }
+                changes = {k: v for k, v in new_vals.items() if v != old_vals[k]}
+                if not all(new_vals[k] for k in
+                           ("first_name", "last_name", "email_address", "department")):
+                    st.error("First name, last name, email and department cannot be empty.")
+                elif "@" not in new_vals["email_address"] or \
+                        "." not in new_vals["email_address"].split("@")[-1]:
+                    st.error("Please enter a valid email address.")
+                elif not changes:
+                    st.info("No changes to save.")
+                else:
+                    try:
+                        ok, msg = update_employee(sel_id, changes)
+                    except Exception as e:
+                        ok, msg = False, f"Could not reach the database: {e}"
+                    if ok:
+                        load_employees.clear()
+                        st.toast(f"Saved changes for {new_vals['first_name']} {new_vals['last_name']}.")
+                        st.rerun()
+                    else:
+                        st.error(msg)
 
 
 main()
