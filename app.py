@@ -6,6 +6,9 @@ from pathlib import Path
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
+
+from masked_ids import copyable_html, employee_table, id_input, mask_id
 
 # ---- Settings you may need to adjust to match your database ----
 TABLE = "employees"
@@ -42,12 +45,6 @@ def users_url() -> str:
 
 def api_headers() -> dict:
     return {"apikey": st.secrets["SUPABASE_KEY"], "Content-Type": "application/json"}
-
-
-def mask_id(id_no) -> str:
-    """Show only the last 4 digits so the screen does not expose full ID numbers."""
-    s = str(id_no or "")
-    return "*" * max(len(s) - 4, 0) + s[-4:]
 
 
 def same(a, b) -> bool:
@@ -265,9 +262,10 @@ def main():
                 left.write(
                     f" {r.get('email_address', '-')}  \n"
                     f" {r.get('department', '-')}  \n"
-                    f" Start date: {r.get('start_date', '-')}  \n"
-                    f" ID: {mask_id(id_no)}"
+                    f" Start date: {r.get('start_date', '-')}"
                 )
+                with left:
+                    components.html(copyable_html('ID: ' + id_input(id_no)), height=36)
                 if right.button(" Confirm contract", key=f"confirm_{id_no}", type="primary"):
                     try:
                         if confirm_contract(id_no):
@@ -286,16 +284,12 @@ def main():
         for r in rows:
             text = f"{r.get('first_name', '')} {r.get('last_name', '')} {r.get('email_address', '')}".lower()
             if search.strip().lower() in text:
-                view.append({
-                    "ID": mask_id(r.get(ID_COL)),
-                    "First name": r.get("first_name"),
-                    "Last name": r.get("last_name"),
-                    "Email": r.get("email_address"),
-                    "Department": r.get("department"),
-                    "Start date": r.get("start_date"),
-                    "Progress": r.get("progress"),
-                })
-        st.dataframe(view, use_container_width=True, hide_index=True)
+                view.append(r)
+        st.caption("Click an ID, then press Ctrl+C (Command+C on Mac) to copy the full number.")
+        if view:
+            components.html(employee_table(view), height=min(400, 45 + 42 * len(view)))
+        else:
+            st.info("No employees match your search.")
 
 
     with tab_add:
@@ -372,8 +366,11 @@ def main():
 
             with st.form(f"edit_form_{sel_id}"):
                 e1, e2 = st.columns(2)
-                e1.text_input("ID number (cannot be changed)", value=mask_id(sel_id),
-                              disabled=True, key=f"e_id_{sel_id}")
+                with e1:
+                    components.html(copyable_html(
+                        '<label>ID number (cannot be changed)<br>'
+                        + id_input(sel_id) + '</label>'
+                    ), height=74)
                 e_first = e2.text_input("First name", value=sel.get("first_name") or "",
                                         key=f"e_first_{sel_id}")
                 e_last = e1.text_input("Last name", value=sel.get("last_name") or "",
