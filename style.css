@@ -1,28 +1,27 @@
 /* ==========================================================
-   Think Tank Software Solutions - theme for the HR Dashboard
-   Colours sampled from the Think Tank website screenshot:
-     teal #009ABF | slate #54595F | heading #4D4D4F
-     muted #7A7A7A | page #F5F5F5 | cards #FFFFFF
+   Theme for the HR Dashboard (steel blue + charcoal)
+   Colours sampled from the supplied banner image:
+     blue #4098BC | charcoal #4D4D4F | banner #C9DFEA to #F6F7F9
    ========================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --tt-teal: #009ABF;
-  --tt-teal-dark: #007C9A;
-  --tt-teal-soft: #E5F5F9;
-  --tt-slate: #54595F;
+  --tt-teal: #3A8DB3;
+  --tt-teal-dark: #23779E;
+  --tt-teal-soft: #E3EFF6;
+  --tt-slate: #4D4D4F;
   --tt-heading: #4D4D4F;
-  --tt-muted: #7A7A7A;
-  --tt-bg: #F5F5F5;
+  --tt-muted: #5F6B75;
+  --tt-bg: #F6F7F9;
   --tt-card: #FFFFFF;
-  --tt-border: #E3E3E3;
+  --tt-border: #DDE3E8;
   --tt-radius: 16px;
 }
 
 /* ---------- Page ---------- */
 .stApp {
-  background: var(--tt-bg);
+  background: linear-gradient(90deg, #C9DFEA 0%, #F6F7F9 60%) top / 100% 230px no-repeat, var(--tt-bg);
   color: var(--tt-heading);
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
 }
@@ -47,7 +46,7 @@ h1 {
 h2, h3 { color: var(--tt-heading); font-weight: 600; letter-spacing: -0.01em; }
 p, li, label { color: var(--tt-heading); }
 [data-testid="stCaptionContainer"], small { color: var(--tt-muted); }
-a { color: var(--tt-teal); }
+a { color: var(--tt-teal-dark); }
 
 /* Optional wordmark: think<span>tank</span> (see instructions) */
 .tt-brand { font-size: 1.9rem; font-weight: 700; color: var(--tt-slate); letter-spacing: -0.03em; line-height: 1; }
@@ -63,8 +62,8 @@ a { color: var(--tt-teal); }
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: var(--tt-bg);
-  color: var(--tt-teal);
+  background: #FFFFFF;
+  color: var(--tt-teal-dark);
   border: 1px solid var(--tt-border);
   transition: all .15s ease;
 }
@@ -78,14 +77,14 @@ a { color: var(--tt-teal); }
 /* primary = the teal "REQUEST DEMO" look */
 .stButton > button[kind="primary"],
 .stButton > button[data-testid="stBaseButton-primary"] {
-  background: var(--tt-teal);
+  background: var(--tt-teal-dark);
   color: #FFFFFF;
-  border: 1px solid var(--tt-teal);
+  border: 1px solid var(--tt-teal-dark);
 }
 .stButton > button[kind="primary"]:hover,
 .stButton > button[data-testid="stBaseButton-primary"]:hover {
-  background: var(--tt-teal-dark);
-  border-color: var(--tt-teal-dark);
+  background: #185A7A;
+  border-color: #185A7A;
   color: #FFFFFF;
 }
 
@@ -98,7 +97,7 @@ a { color: var(--tt-teal); }
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 [data-testid="stMetricLabel"] p { color: var(--tt-muted); font-weight: 500; font-size: 0.9rem; }
-[data-testid="stMetricValue"] { color: var(--tt-teal); font-weight: 700; }
+[data-testid="stMetricValue"] { color: var(--tt-teal-dark); font-weight: 700; }
 
 /* ---------- Employee cards ----------
    Needs key="card_..." on st.container (see instructions). */
@@ -113,7 +112,7 @@ a { color: var(--tt-teal); }
 
 /* ---------- Tabs ---------- */
 [data-testid="stTabs"] button[role="tab"] { color: var(--tt-muted); font-weight: 600; }
-[data-testid="stTabs"] button[role="tab"][aria-selected="true"] { color: var(--tt-teal); }
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"] { color: var(--tt-teal-dark); }
 [data-testid="stTabs"] [data-baseweb="tab-highlight"] { background-color: var(--tt-teal); height: 3px; }
 [data-testid="stTabs"] [data-baseweb="tab-border"] { background-color: var(--tt-border); }
 
@@ -145,7 +144,7 @@ a { color: var(--tt-teal); }
 /* ---------- Alerts & toasts ---------- */
 [data-testid="stAlert"] { border-radius: 12px; }
 
-/* ---------- Sidebar (the dark "Partnership first" card look) ---------- */
+/* ---------- Sidebar (charcoal panel) ---------- */
 [data-testid="stSidebar"] { background: var(--tt-slate); }
 [data-testid="stSidebar"] *,
 [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #F2F5F7; }
@@ -157,7 +156,12 @@ a { color: var(--tt-teal); }
   border: 1px solid rgba(255, 255, 255, 0.55);
 }
 [data-testid="stSidebar"] .stButton > button:hover {
-   /* ---------- Force light text inputs ---------- */
+  background: var(--tt-teal-dark);
+  border-color: var(--tt-teal-dark);
+  color: #FFFFFF;
+}
+
+/* ---------- Force light text inputs ---------- */
 [data-testid="stTextInput"] [data-baseweb="input"],
 [data-testid="stTextInput"] [data-baseweb="base-input"],
 [data-testid="stTextInput"] [data-baseweb="input"] > div {
@@ -169,15 +173,8 @@ a { color: var(--tt-teal); }
   background-color: #FFFFFF !important;
   color: #4D4D4F !important;
   -webkit-text-fill-color: #4D4D4F !important;
-  caret-color: #009ABF;
+  caret-color: #3A8DB3;
 }
-[data-testid="stTextInput"] input::placeholder { color: #7A7A7A !important; }
-[data-testid="stTextInput"] button {
-  background: transparent !important;
-  color: #7A7A7A !important;
-}
-[data-testid="stTextInput"] svg { fill: #7A7A7A !important; }
-  background: var(--tt-teal);
-  border-color: var(--tt-teal);
-  color: #FFFFFF;
-}
+[data-testid="stTextInput"] input::placeholder { color: #5F6B75 !important; }
+[data-testid="stTextInput"] button { background: transparent !important; color: #5F6B75 !important; }
+[data-testid="stTextInput"] svg { fill: #5F6B75 !important; }
