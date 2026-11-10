@@ -1,2 +1,3 @@
-streamlit
+streamlit[pdf]>=1.49
 requests
+PyJWT[crypto]>=2.8,<3

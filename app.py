@@ -9,6 +9,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from masked_ids import copyable_html, employee_table, id_input, mask_id
+from contracts import AuthenticationExpired, ContractError, connect, fetch_signed_contract
 
 # ---- Settings you may need to adjust to match your database ----
 TABLE = "employees"
@@ -158,6 +159,38 @@ def update_employee(id_no, changes: dict):
     return True, ""
 
 
+@st.cache_data(ttl=3000, show_spinner=False)
+def docusign_connection():
+    return connect(st.secrets)
+
+
+@st.dialog("Signed contract", width="large")
+def view_signed_contract(employee):
+    st.write(f"{employee.get('first_name', '')} {employee.get('last_name', '')}")
+    try:
+        with st.spinner("Retrieving signed contract from DocuSign…"):
+            try:
+                pdf = fetch_signed_contract(docusign_connection(), employee.get("envelope_id"))
+            except AuthenticationExpired:
+                docusign_connection.clear()
+                pdf = fetch_signed_contract(docusign_connection(), employee.get("envelope_id"))
+    except ContractError as exc:
+        if isinstance(exc, AuthenticationExpired):
+            docusign_connection.clear()
+        st.error(str(exc))
+        return
+    except requests.RequestException:
+        st.error("Could not reach DocuSign. Please try again shortly.")
+        return
+    except (KeyError, ValueError):
+        st.error("DocuSign returned an unexpected response. Please try again later.")
+        return
+    st.download_button("Download signed contract", pdf,
+                       file_name=f"signed-contract-{employee['envelope_id']}.pdf",
+                       mime="application/pdf", on_click="ignore")
+    st.pdf(pdf, height=650)
+
+
 def login_gate() -> bool:
     if st.session_state.get("user"):
         return True
@@ -266,6 +299,11 @@ def main():
                 )
                 with left:
                     components.html(copyable_html('ID: ' + id_input(id_no)), height=36)
+                if r.get("envelope_id"):
+                    if right.button("View signed contract", key=f"view_{id_no}"):
+                        view_signed_contract(r)
+                else:
+                    right.caption("No DocuSign envelope linked yet.")
                 if right.button(" Confirm contract", key=f"confirm_{id_no}", type="primary"):
                     try:
                         if confirm_contract(id_no):
@@ -288,6 +326,20 @@ def main():
         st.caption("Click an ID, then press Ctrl+C (Command+C on Mac) to copy the full number.")
         if view:
             components.html(employee_table(view), height=min(400, 45 + 42 * len(view)))
+            st.subheader("View a signed contract")
+            selected = st.selectbox(
+                "Choose an employee to view their contract", range(len(view)),
+                format_func=lambda i: (
+                    f"{view[i].get('first_name', '')} {view[i].get('last_name', '')} "
+                    f"({mask_id(view[i].get(ID_COL))})"
+                ), key="contract_employee",
+            )
+            employee = view[selected]
+            if employee.get("envelope_id"):
+                if st.button("View signed contract", key="view_all_contract"):
+                    view_signed_contract(employee)
+            else:
+                st.caption("No DocuSign envelope linked to this employee yet.")
         else:
             st.info("No employees match your search.")
 
