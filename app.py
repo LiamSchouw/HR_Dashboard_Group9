@@ -11,6 +11,7 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
+from docusign_contracts import DocuSignError, config_from_secrets, fetch_contract
 from masked_ids import copyable_html, employee_table, id_input, mask_id
 
 # ---- Settings you may need to adjust to match your database ----
@@ -245,6 +246,16 @@ def check_login(username: str, password: str):
     return None, ""
 
 
+def can_view_contracts() -> bool:
+    """Any logged-in user (including new profiles) may open contracts.
+
+    To limit it later, add CONTRACT_VIEWERS = "admin,hrmanager" (usernames) to the Secrets.
+    """
+    allowed = {u.strip().lower() for u in str(secret("CONTRACT_VIEWERS", "")).split(",")
+               if u.strip()}
+    return not allowed or st.session_state.get("username", "") in allowed
+
+
 def lock_remaining() -> int:
     """Seconds left on the short lock after too many failed attempts (0 = not locked)."""
     left = st.session_state.get("lock_until", 0) - time.time()
@@ -332,6 +343,7 @@ def login_gate() -> bool:
                         name, err = check_login(username, pw)
                     if name:
                         st.session_state["user"] = name
+                        st.session_state["username"] = username.strip().lower()
                         st.session_state["fails"] = 0
                         st.rerun()
                     elif err:
@@ -411,8 +423,8 @@ def main():
     m2.metric("Signed - awaiting confirmation", len(waiting))
     m3.metric("Confirmed", len(confirmed))
 
-    tab_wait, tab_all, tab_add, tab_edit = st.tabs(
-        ["Awaiting confirmation", "All employees", "Add employee", "Edit employee"]
+    tab_wait, tab_all, tab_add, tab_edit, tab_contracts = st.tabs(
+        ["Awaiting confirmation", "All employees", "Add employee", "Edit employee", "Contracts"]
     )
 
     with tab_wait:
@@ -573,6 +585,52 @@ def main():
                         st.rerun()
                     else:
                         st.error(f"Could not save the changes. {msg}")
+
+
+    with tab_contracts:
+        st.subheader("Employee contracts")
+        ds_cfg = config_from_secrets(secret)
+        if not can_view_contracts():
+            st.info("Your account is not allowed to view contracts.")
+        elif not ds_cfg:
+            st.info("Contract viewing is not set up yet. Add the DocuSign settings in the "
+                    "app's Secrets, then reboot the app.")
+        elif not rows:
+            st.info("There are no employees yet.")
+        else:
+            cidx = st.selectbox(
+                "Choose an employee", range(len(rows)), key="contract_pick",
+                format_func=lambda i: (f"{rows[i].get('first_name', '')} "
+                                       f"{rows[i].get('last_name', '')} "
+                                       f"({mask_id(rows[i].get(ID_COL))})"),
+            )
+            emp = rows[cidx]
+            emp_id = emp.get(ID_COL)
+            if st.button("Load contract", key="load_contract"):
+                try:
+                    with st.spinner("Contacting DocuSign..."):
+                        result = fetch_contract(ds_cfg, envelope_id=emp.get("envelope_id"),
+                                                email=emp.get("email_address"))
+                    st.session_state["contract"] = {"emp": emp_id, **result}
+                    logger.info("Contract opened by %s for employee ending %s",
+                                st.session_state.get("username"), str(emp_id)[-4:])
+                except DocuSignError as e:
+                    st.session_state.pop("contract", None)
+                    st.error(e.message)
+                except Exception:
+                    logger.exception("Unexpected error while loading a contract")
+                    st.session_state.pop("contract", None)
+                    st.error("Could not load the contract. Please try again.")
+            data = st.session_state.get("contract")
+            if data and data.get("emp") == emp_id:
+                st.write(f"DocuSign status: **{data['status']}**")
+                st.download_button(
+                    "Download contract (PDF)", data=data["pdf"],
+                    file_name=f"contract_{str(emp_id)[-4:]}.pdf", mime="application/pdf",
+                    key=f"dl_{emp_id}",
+                )
+                if str(data["status"]).lower() != "completed":
+                    st.warning("This contract is not fully signed in DocuSign yet.")
 
 
 def run():
